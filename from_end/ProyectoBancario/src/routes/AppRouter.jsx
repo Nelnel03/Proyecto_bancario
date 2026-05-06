@@ -1,5 +1,6 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
 import ProtectedRoute             from './ProtectedRoute'
+import PublicRoute                from './PublicRoute'
 import PrivateLayout              from '../components/layout/PrivateLayout'
 
 import LoginPage              from '../pages/LoginPage'
@@ -14,9 +15,13 @@ import TransactionHistoryPage from '../pages/TransactionHistoryPage'
 export default function AppRouter() {
   return (
     <Routes>
-      {/* Rutas públicas */}
-      <Route path="/login"    element={<LoginPage />} />
-      <Route path="/register" element={<RegisterPage />} />
+      {/* Rutas públicas — redirigen al dashboard si ya hay sesión */}
+      <Route path="/login" element={
+        <PublicRoute><LoginPage /></PublicRoute>
+      } />
+      <Route path="/register" element={
+        <PublicRoute><RegisterPage /></PublicRoute>
+      } />
 
       {/* Rutas protegidas — todas comparten PrivateLayout */}
       <Route element={
@@ -32,7 +37,6 @@ export default function AppRouter() {
         <Route path="/history"    element={<TransactionHistoryPage />} />
       </Route>
 
-      {/* Ruta desconocida → inicio */}
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   )
