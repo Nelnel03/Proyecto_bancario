@@ -3,6 +3,8 @@ import { CreditCard, Plus, X, Wallet } from 'lucide-react'
 import toast from 'react-hot-toast'
 import useAccounts from '../hooks/useAccounts'
 import { createAccount } from '../services/accountsService'
+import { fmt } from '../utils/format'
+import { TYPE_BADGE } from '../utils/constants'
 
 const ACCOUNT_TYPES = [
   { id: 1, name: 'savings',  label: 'Ahorros',   description: 'Ideal para guardar y hacer crecer tu dinero', color: 'border-blue-500 bg-blue-600/10',   badge: 'bg-blue-600/20 text-blue-400' },
@@ -12,8 +14,6 @@ const ACCOUNT_TYPES = [
 
 const TYPE_META = Object.fromEntries(ACCOUNT_TYPES.map((t) => [t.name, t]))
 
-const fmt = (n) =>
-  new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(parseFloat(n))
 
 function CreateAccountModal({ onClose, onCreated }) {
   const [selected, setSelected] = useState(null)
@@ -151,7 +151,7 @@ export default function AccountsPage() {
                     <p className="text-white font-medium font-mono text-sm tracking-wide">
                       {account.account_number}
                     </p>
-                    <span className={`text-xs font-medium px-2 py-0.5 rounded-full mt-1 inline-block ${meta?.badge ?? 'bg-slate-700 text-slate-400'}`}>
+                    <span className={`text-xs font-medium px-2 py-0.5 rounded-full mt-1 inline-block ${TYPE_BADGE[account.accountType?.name] ?? 'bg-slate-700 text-slate-400'}`}>
                       {meta?.label ?? account.accountType?.name}
                     </span>
                   </div>

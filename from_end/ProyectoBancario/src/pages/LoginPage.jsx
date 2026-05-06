@@ -1,18 +1,17 @@
+import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { useNavigate, Link } from 'react-router-dom'
+import { Eye, EyeOff } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { login as loginService } from '../services/authService'
 import useAuthStore from '../store/useAuthStore'
 
 export default function LoginPage() {
-  const navigate = useNavigate()
+  const navigate   = useNavigate()
   const loginStore = useAuthStore((s) => s.login)
+  const [showPwd, setShowPwd] = useState(false)
 
-  const {
-    register,
-    handleSubmit,
-    formState: { errors, isSubmitting },
-  } = useForm()
+  const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm()
 
   const onSubmit = async (data) => {
     console.log('[Login] Enviando:', data)
@@ -25,8 +24,7 @@ export default function LoginPage() {
     } catch (err) {
       console.error('[Login] Error completo:', err)
       console.error('[Login] Respuesta de error:', err.response)
-      const msg = err.response?.data?.error ?? 'Error al iniciar sesión'
-      toast.error(msg)
+      toast.error(err.response?.data?.error ?? 'Error al iniciar sesión')
     }
   }
 
@@ -54,30 +52,35 @@ export default function LoginPage() {
               className="w-full bg-slate-700 border border-slate-600 text-white placeholder-slate-500 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
               {...register('email', {
                 required: 'El correo es obligatorio',
-                pattern: { value: /\S+@\S+\.\S+/, message: 'Correo inválido' },
+                pattern: { value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/, message: 'Correo inválido' },
               })}
             />
-            {errors.email && (
-              <p className="text-red-400 text-xs mt-1">{errors.email.message}</p>
-            )}
+            {errors.email && <p className="text-red-400 text-xs mt-1">{errors.email.message}</p>}
           </div>
 
           <div>
             <label className="block text-slate-300 text-sm font-medium mb-1.5">
               Contraseña
             </label>
-            <input
-              type="password"
-              placeholder="••••••••"
-              className="w-full bg-slate-700 border border-slate-600 text-white placeholder-slate-500 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
-              {...register('password', {
-                required: 'La contraseña es obligatoria',
-                minLength: { value: 6, message: 'Mínimo 6 caracteres' },
-              })}
-            />
-            {errors.password && (
-              <p className="text-red-400 text-xs mt-1">{errors.password.message}</p>
-            )}
+            <div className="relative">
+              <input
+                type={showPwd ? 'text' : 'password'}
+                placeholder="••••••••"
+                className="w-full bg-slate-700 border border-slate-600 text-white placeholder-slate-500 rounded-lg px-4 py-2.5 pr-11 text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
+                {...register('password', {
+                  required: 'La contraseña es obligatoria',
+                  minLength: { value: 6, message: 'Mínimo 6 caracteres' },
+                })}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPwd((v) => !v)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200 transition-colors"
+              >
+                {showPwd ? <EyeOff size={17} /> : <Eye size={17} />}
+              </button>
+            </div>
+            {errors.password && <p className="text-red-400 text-xs mt-1">{errors.password.message}</p>}
           </div>
 
           <button

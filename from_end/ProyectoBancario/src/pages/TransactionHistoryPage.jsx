@@ -1,27 +1,12 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { ArrowDownCircle, ArrowUpCircle, ArrowLeftRight, ScrollText, ChevronDown } from 'lucide-react'
 import useAccounts from '../hooks/useAccounts'
 import { getHistory } from '../services/transactionsService'
-
-const fmt = (n) =>
-  new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(parseFloat(n))
-
-const fmtDate = (iso) =>
-  new Intl.DateTimeFormat('es-MX', {
-    day: '2-digit', month: 'short', year: 'numeric',
-    hour: '2-digit', minute: '2-digit',
-  }).format(new Date(iso))
-
-const TYPE_LABELS  = { savings: 'Ahorros', checking: 'Corriente', payroll: 'Nómina' }
-const STATUS_META  = {
-  completed: { label: 'Completada', class: 'bg-green-600/20 text-green-400' },
-  pending:   { label: 'Pendiente',  class: 'bg-yellow-600/20 text-yellow-400' },
-  failed:    { label: 'Fallida',    class: 'bg-red-600/20 text-red-400' },
-}
+import { fmt, fmtDate } from '../utils/format'
+import { TYPE_LABELS, STATUS_META } from '../utils/constants'
 
 function txMeta(tx, accountId) {
   const isIncoming = tx.target_account_id === accountId
-
   if (tx.type === 'deposit') {
     return { label: 'Depósito', icon: ArrowDownCircle, color: 'text-green-400', sign: '+', amountClass: 'text-green-400' }
   }
@@ -36,17 +21,36 @@ function txMeta(tx, accountId) {
   return { label: tx.type, icon: ArrowLeftRight, color: 'text-slate-400', sign: '', amountClass: 'text-white' }
 }
 
+function dayLabel(isoDate) {
+  const today     = new Date()
+  const yesterday = new Date(today); yesterday.setDate(today.getDate() - 1)
+  const d         = new Date(isoDate)
+  const sameDay   = (a, b) => a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate()
+  if (sameDay(d, today))     return 'Hoy'
+  if (sameDay(d, yesterday)) return 'Ayer'
+  return new Intl.DateTimeFormat('es-MX', { day: '2-digit', month: 'long', year: 'numeric' }).format(d)
+}
+
+const FILTERS = [
+  { key: 'all',        label: 'Todos'          },
+  { key: 'deposit',    label: 'Depósitos'      },
+  { key: 'withdrawal', label: 'Retiros'        },
+  { key: 'transfer',   label: 'Transferencias' },
+]
+
 export default function TransactionHistoryPage() {
   const { accounts, loading: loadingAccounts } = useAccounts()
   const [selectedAccount, setSelectedAccount] = useState(null)
   const [transactions, setTransactions]       = useState([])
   const [loading, setLoading]                 = useState(false)
   const [error, setError]                     = useState(null)
+  const [activeFilter, setActiveFilter]       = useState('all')
 
   useEffect(() => {
     if (!selectedAccount) return
     setLoading(true)
     setError(null)
+    setActiveFilter('all')
     getHistory(selectedAccount.id)
       .then((res) => setTransactions(res.data ?? []))
       .catch((err) => {
@@ -61,6 +65,21 @@ export default function TransactionHistoryPage() {
     setSelectedAccount(acc ?? null)
     setTransactions([])
   }
+
+  const filtered = useMemo(
+    () => (activeFilter === 'all' ? transactions : transactions.filter((tx) => tx.type === activeFilter)),
+    [transactions, activeFilter]
+  )
+
+  const grouped = useMemo(() => {
+    const map = new Map()
+    for (const tx of filtered) {
+      const day = tx.createdAt.slice(0, 10)
+      if (!map.has(day)) map.set(day, [])
+      map.get(day).push(tx)
+    }
+    return Array.from(map.entries())
+  }, [filtered])
 
   return (
     <div className="space-y-6 max-w-3xl">
@@ -94,7 +113,26 @@ export default function TransactionHistoryPage() {
         )}
       </div>
 
-      {/* Estados */}
+      {/* Filtros por tipo */}
+      {selectedAccount && !loading && transactions.length > 0 && (
+        <div className="flex gap-2 flex-wrap">
+          {FILTERS.map(({ key, label }) => (
+            <button
+              key={key}
+              onClick={() => setActiveFilter(key)}
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                activeFilter === key
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-slate-800 border border-slate-700 text-slate-400 hover:text-white hover:border-slate-500'
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* Estado vacío inicial */}
       {!selectedAccount && !loadingAccounts && (
         <div className="bg-slate-800 border border-slate-700 border-dashed rounded-2xl p-12 text-center">
           <ScrollText size={36} className="text-slate-600 mx-auto mb-3" />
@@ -102,6 +140,7 @@ export default function TransactionHistoryPage() {
         </div>
       )}
 
+      {/* Skeleton */}
       {loading && (
         <div className="space-y-3">
           {[1, 2, 3, 4].map((n) => (
@@ -116,6 +155,7 @@ export default function TransactionHistoryPage() {
         </div>
       )}
 
+      {/* Sin movimientos */}
       {!loading && selectedAccount && !error && transactions.length === 0 && (
         <div className="bg-slate-800 border border-slate-700 border-dashed rounded-2xl p-12 text-center">
           <ScrollText size={36} className="text-slate-600 mx-auto mb-3" />
@@ -124,44 +164,57 @@ export default function TransactionHistoryPage() {
         </div>
       )}
 
-      {!loading && transactions.length > 0 && (
-        <div className="space-y-2">
+      {/* Sin resultados para el filtro activo */}
+      {!loading && selectedAccount && !error && transactions.length > 0 && filtered.length === 0 && (
+        <div className="bg-slate-800 border border-slate-700 border-dashed rounded-2xl p-10 text-center">
+          <p className="text-slate-400 text-sm">No hay movimientos de este tipo</p>
+        </div>
+      )}
+
+      {/* Lista agrupada por fecha */}
+      {!loading && grouped.length > 0 && (
+        <div className="space-y-5">
           <p className="text-slate-500 text-xs uppercase tracking-wider px-1">
-            {transactions.length} movimiento{transactions.length !== 1 ? 's' : ''}
+            {filtered.length} movimiento{filtered.length !== 1 ? 's' : ''}
           </p>
-          {transactions.map((tx) => {
-            const meta   = txMeta(tx, selectedAccount.id)
-            const Icon   = meta.icon
-            const status = STATUS_META[tx.status] ?? STATUS_META.completed
-
-            return (
-              <div
-                key={tx.id}
-                className="bg-slate-800 border border-slate-700 rounded-xl px-5 py-4 flex items-center justify-between gap-4"
-              >
-                <div className="flex items-center gap-4 min-w-0">
-                  <div className={`w-10 h-10 rounded-full bg-slate-700 flex items-center justify-center shrink-0 ${meta.color}`}>
-                    <Icon size={18} />
-                  </div>
-                  <div className="min-w-0">
-                    <p className="text-white text-sm font-medium truncate">{meta.label}</p>
-                    <p className="text-slate-500 text-xs truncate">
-                      {tx.description ?? '—'} · {fmtDate(tx.created_at)}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-3 shrink-0">
-                  <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${status.class}`}>
-                    {status.label}
-                  </span>
-                  <p className={`text-base font-bold ${meta.amountClass}`}>
-                    {meta.sign}{fmt(tx.amount)}
-                  </p>
-                </div>
+          {grouped.map(([day, txs]) => (
+            <div key={day}>
+              <p className="text-slate-500 text-xs font-medium mb-2 px-1">{dayLabel(day)}</p>
+              <div className="bg-slate-800 border border-slate-700 rounded-xl divide-y divide-slate-700 overflow-hidden">
+                {txs.map((tx) => {
+                  const meta   = txMeta(tx, selectedAccount.id)
+                  const Icon   = meta.icon
+                  const status = STATUS_META[tx.status] ?? STATUS_META.completed
+                  return (
+                    <div
+                      key={tx.id}
+                      className="px-5 py-4 flex items-center justify-between gap-4"
+                    >
+                      <div className="flex items-center gap-4 min-w-0">
+                        <div className={`w-10 h-10 rounded-full bg-slate-700 flex items-center justify-center shrink-0 ${meta.color}`}>
+                          <Icon size={18} />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-white text-sm font-medium truncate">{meta.label}</p>
+                          <p className="text-slate-500 text-xs truncate">
+                            {tx.description ?? '—'} · {fmtDate(tx.createdAt)}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3 shrink-0">
+                        <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${status.class}`}>
+                          {status.label}
+                        </span>
+                        <p className={`text-base font-bold ${meta.amountClass}`}>
+                          {meta.sign}{fmt(tx.amount)}
+                        </p>
+                      </div>
+                    </div>
+                  )
+                })}
               </div>
-            )
-          })}
+            </div>
+          ))}
         </div>
       )}
 

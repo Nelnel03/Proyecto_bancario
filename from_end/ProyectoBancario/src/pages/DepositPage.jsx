@@ -1,32 +1,43 @@
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
-import { ArrowDownCircle, CheckCircle } from 'lucide-react'
+import { ArrowDownCircle, CheckCircle, AlertCircle } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { deposit } from '../services/transactionsService'
-
-const fmt = (n) =>
-  new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(n)
+import useAccounts from '../hooks/useAccounts'
+import NoAccountsBanner from '../components/NoAccountsBanner'
+import { fmt, fmtAccountNumber, ACCOUNT_NUMBER_PATTERN } from '../utils/format'
 
 export default function DepositPage() {
-  const [result, setResult] = useState(null)
+  const { accounts, loading, refetch } = useAccounts()
+  const [result, setResult]   = useState(null)
+  const [confirm, setConfirm] = useState(null)
+  const [executing, setExecuting] = useState(false)
 
-  const { register, handleSubmit, reset, formState: { errors, isSubmitting } } = useForm()
+  const { register, handleSubmit, reset, formState: { errors } } = useForm()
 
-  const onSubmit = async (data) => {
-    console.log('[Deposit] Enviando:', data)
+  const onSubmit = (data) => setConfirm(data)
+
+  const executeDeposit = async () => {
+    setExecuting(true)
+    console.log('[Deposit] Enviando:', confirm)
     try {
       const res = await deposit({
-        account_number: data.account_number.trim(),
-        amount:         parseFloat(data.amount),
-        description:    data.description || undefined,
+        account_number: confirm.account_number.trim(),
+        amount:         parseFloat(confirm.amount),
+        description:    confirm.description || undefined,
       })
       console.log('[Deposit] Respuesta:', res)
       setResult(res.data)
+      setConfirm(null)
       toast.success('Depósito realizado')
       reset()
+      refetch()
     } catch (err) {
       console.error('[Deposit] Error:', err.response)
+      setConfirm(null)
       toast.error(err.response?.data?.error ?? 'Error al realizar el depósito')
+    } finally {
+      setExecuting(false)
     }
   }
 
@@ -36,6 +47,50 @@ export default function DepositPage() {
         <h1 className="text-2xl font-bold text-white">Depósito</h1>
         <p className="text-slate-400 text-sm mt-1">Agrega fondos a cualquier cuenta activa</p>
       </div>
+
+      {/* Modal de confirmación */}
+      {confirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setConfirm(null)} />
+          <div className="relative bg-slate-800 border border-slate-700 rounded-2xl p-6 w-full max-w-sm shadow-2xl">
+            <div className="flex items-center gap-3 mb-4">
+              <AlertCircle size={22} className="text-yellow-400" />
+              <h2 className="text-white font-semibold">Confirmar depósito</h2>
+            </div>
+            <div className="bg-slate-700/50 rounded-xl p-4 space-y-2 text-sm mb-5">
+              <div className="flex justify-between">
+                <span className="text-slate-400">Cuenta destino</span>
+                <span className="text-white font-mono">{confirm.account_number}</span>
+              </div>
+              <div className="flex justify-between border-t border-slate-600 pt-2 mt-2">
+                <span className="text-slate-400">Monto</span>
+                <span className="text-white font-bold text-base">{fmt(parseFloat(confirm.amount))}</span>
+              </div>
+              {confirm.description && (
+                <div className="flex justify-between">
+                  <span className="text-slate-400">Descripción</span>
+                  <span className="text-slate-300">{confirm.description}</span>
+                </div>
+              )}
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setConfirm(null)}
+                className="flex-1 bg-slate-700 hover:bg-slate-600 text-slate-300 font-medium py-2.5 rounded-lg text-sm transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={executeDeposit}
+                disabled={executing}
+                className="flex-1 bg-green-600 hover:bg-green-500 disabled:bg-green-800 text-white font-medium py-2.5 rounded-lg text-sm transition-colors"
+              >
+                {executing ? 'Procesando...' : 'Confirmar'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {result && (
         <div className="bg-green-500/10 border border-green-500/30 rounded-xl p-5 flex items-start gap-4">
@@ -50,17 +105,37 @@ export default function DepositPage() {
         </div>
       )}
 
+      {!loading && accounts.length === 0 && (
+        <NoAccountsBanner
+          message="Aún no tienes cuentas propias"
+          description="Puedes depositar en cualquier cuenta del banco, pero si quieres recibir depósitos primero crea la tuya"
+          actionLabel="Crear mi cuenta"
+          actionTo="/accounts"
+          informative
+        />
+      )}
+
       <form onSubmit={handleSubmit(onSubmit)} className="bg-slate-800 border border-slate-700 rounded-2xl p-6 space-y-5">
         <div>
           <label className="block text-slate-300 text-sm font-medium mb-1.5">
             Número de cuenta destino
           </label>
-          <input
-            type="text"
-            placeholder="XXXX-XXXX-XXXX"
-            className="w-full bg-slate-700 border border-slate-600 text-white placeholder-slate-500 rounded-lg px-4 py-2.5 text-sm font-mono focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
-            {...register('account_number', { required: 'El número de cuenta es obligatorio' })}
-          />
+          {(() => {
+            const { onChange, ...rest } = register('account_number', {
+              required: 'El número de cuenta es obligatorio',
+              pattern:  { value: ACCOUNT_NUMBER_PATTERN, message: 'Formato inválido — usa XXXX-XXXX-XXXX' },
+            })
+            return (
+              <input
+                type="text"
+                placeholder="XXXX-XXXX-XXXX"
+                maxLength={14}
+                className="w-full bg-slate-700 border border-slate-600 text-white placeholder-slate-500 rounded-lg px-4 py-2.5 text-sm font-mono focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
+                onChange={(e) => { e.target.value = fmtAccountNumber(e.target.value); onChange(e) }}
+                {...rest}
+              />
+            )
+          })()}
           {errors.account_number && <p className="text-red-400 text-xs mt-1">{errors.account_number.message}</p>}
         </div>
 
@@ -97,11 +172,10 @@ export default function DepositPage() {
 
         <button
           type="submit"
-          disabled={isSubmitting}
-          className="w-full flex items-center justify-center gap-2 bg-green-600 hover:bg-green-500 disabled:bg-slate-700 disabled:text-slate-500 disabled:cursor-not-allowed text-white font-medium py-2.5 rounded-lg text-sm transition-colors"
+          className="w-full flex items-center justify-center gap-2 bg-green-600 hover:bg-green-500 text-white font-medium py-2.5 rounded-lg text-sm transition-colors"
         >
           <ArrowDownCircle size={17} />
-          {isSubmitting ? 'Procesando...' : 'Realizar depósito'}
+          Continuar
         </button>
       </form>
     </div>

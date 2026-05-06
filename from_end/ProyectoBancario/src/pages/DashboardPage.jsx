@@ -1,19 +1,12 @@
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ArrowDownCircle, ArrowUpCircle, ArrowLeftRight, CreditCard, TrendingUp } from 'lucide-react'
 import useAuthStore from '../store/useAuthStore'
 import useAccounts from '../hooks/useAccounts'
-
-const TYPE_LABELS = {
-  savings:  'Ahorros',
-  checking: 'Corriente',
-  payroll:  'Nómina',
-}
-
-const TYPE_COLORS = {
-  savings:  'bg-blue-600/20 text-blue-400',
-  checking: 'bg-purple-600/20 text-purple-400',
-  payroll:  'bg-green-600/20 text-green-400',
-}
+import NoAccountsBanner from '../components/NoAccountsBanner'
+import { fmt, fmtDate } from '../utils/format'
+import { TYPE_LABELS, TYPE_BADGE, STATUS_META } from '../utils/constants'
+import { getRecentTransactions } from '../services/transactionsService'
 
 const quickActions = [
   { label: 'Depósito',      icon: ArrowDownCircle, to: '/deposit',    color: 'hover:border-green-500 hover:text-green-400' },
@@ -22,15 +15,30 @@ const quickActions = [
   { label: 'Historial',     icon: CreditCard,      to: '/history',    color: 'hover:border-purple-500 hover:text-purple-400' },
 ]
 
+const TX_ICON = {
+  deposit:    { Icon: ArrowDownCircle, color: 'text-green-400' },
+  withdrawal: { Icon: ArrowUpCircle,   color: 'text-red-400'   },
+  transfer:   { Icon: ArrowLeftRight,  color: 'text-blue-400'  },
+}
+
+const TX_LABELS = { deposit: 'Depósito', withdrawal: 'Retiro', transfer: 'Transferencia' }
+
 export default function DashboardPage() {
   const user = useAuthStore((s) => s.user)
   const { accounts, loading, error } = useAccounts()
   const navigate = useNavigate()
 
-  const totalBalance = accounts.reduce((sum, a) => sum + parseFloat(a.balance), 0)
+  const [recent, setRecent]           = useState([])
+  const [recentLoading, setRecentLoading] = useState(true)
 
-  const fmt = (n) =>
-    new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(n)
+  useEffect(() => {
+    getRecentTransactions(5)
+      .then((res) => setRecent(res.data ?? []))
+      .catch(() => setRecent([]))
+      .finally(() => setRecentLoading(false))
+  }, [])
+
+  const totalBalance = accounts.reduce((sum, a) => sum + parseFloat(a.balance), 0)
 
   return (
     <div className="space-y-8 max-w-4xl">
@@ -46,20 +54,29 @@ export default function DashboardPage() {
       </div>
 
       {/* Balance total */}
-      <div className="bg-gradient-to-br from-blue-600 to-blue-800 rounded-2xl p-6 shadow-lg">
-        <div className="flex items-center gap-2 text-blue-200 text-sm mb-2">
-          <TrendingUp size={15} />
-          Balance total
+      {!loading && accounts.length === 0 ? (
+        <NoAccountsBanner
+          message="Aún no tienes cuentas"
+          description="Abre tu primera cuenta para comenzar a gestionar tu dinero"
+          actionLabel="Abrir mi primera cuenta"
+          actionTo="/accounts"
+        />
+      ) : (
+        <div className="bg-gradient-to-br from-blue-600 to-blue-800 rounded-2xl p-6 shadow-lg">
+          <div className="flex items-center gap-2 text-blue-200 text-sm mb-2">
+            <TrendingUp size={15} />
+            Balance total
+          </div>
+          {loading ? (
+            <div className="h-10 w-48 bg-blue-500/40 rounded-lg animate-pulse" />
+          ) : (
+            <p className="text-4xl font-bold text-white tracking-tight">{fmt(totalBalance)}</p>
+          )}
+          <p className="text-blue-200 text-xs mt-2">
+            {accounts.length} {accounts.length === 1 ? 'cuenta activa' : 'cuentas activas'}
+          </p>
         </div>
-        {loading ? (
-          <div className="h-10 w-48 bg-blue-500/40 rounded-lg animate-pulse" />
-        ) : (
-          <p className="text-4xl font-bold text-white tracking-tight">{fmt(totalBalance)}</p>
-        )}
-        <p className="text-blue-200 text-xs mt-2">
-          {accounts.length} {accounts.length === 1 ? 'cuenta activa' : 'cuentas activas'}
-        </p>
-      </div>
+      )}
 
       {/* Acciones rápidas */}
       <div>
@@ -100,19 +117,6 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {!loading && !error && accounts.length === 0 && (
-          <div className="bg-slate-800 border border-slate-700 rounded-xl p-8 text-center">
-            <CreditCard size={32} className="text-slate-600 mx-auto mb-3" />
-            <p className="text-slate-400 text-sm">No tienes cuentas aún</p>
-            <button
-              onClick={() => navigate('/accounts')}
-              className="mt-3 text-blue-400 hover:text-blue-300 text-sm transition-colors"
-            >
-              Crear una cuenta →
-            </button>
-          </div>
-        )}
-
         {!loading && !error && accounts.length > 0 && (
           <div className="space-y-3">
             {accounts.map((account) => (
@@ -128,7 +132,7 @@ export default function DashboardPage() {
                     <p className="text-white text-sm font-medium font-mono">
                       {account.account_number}
                     </p>
-                    <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${TYPE_COLORS[account.accountType?.name] ?? 'bg-slate-700 text-slate-400'}`}>
+                    <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${TYPE_BADGE[account.accountType?.name] ?? 'bg-slate-700 text-slate-400'}`}>
                       {TYPE_LABELS[account.accountType?.name] ?? account.accountType?.name}
                     </span>
                   </div>
@@ -138,6 +142,62 @@ export default function DashboardPage() {
                 </p>
               </div>
             ))}
+          </div>
+        )}
+      </div>
+
+      {/* Últimos movimientos */}
+      <div>
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-sm font-medium text-slate-400 uppercase tracking-wider">
+            Últimos movimientos
+          </h2>
+          <button
+            onClick={() => navigate('/history')}
+            className="text-blue-400 hover:text-blue-300 text-xs transition-colors"
+          >
+            Ver historial completo →
+          </button>
+        </div>
+
+        {recentLoading && (
+          <div className="space-y-2">
+            {[1, 2, 3].map((n) => (
+              <div key={n} className="h-14 bg-slate-800 rounded-xl animate-pulse" />
+            ))}
+          </div>
+        )}
+
+        {!recentLoading && recent.length === 0 && (
+          <div className="bg-slate-800 border border-slate-700 rounded-xl p-5 text-center text-slate-500 text-sm">
+            Aún no hay movimientos registrados
+          </div>
+        )}
+
+        {!recentLoading && recent.length > 0 && (
+          <div className="bg-slate-800 border border-slate-700 rounded-xl divide-y divide-slate-700 overflow-hidden">
+            {recent.map((tx) => {
+              const meta   = TX_ICON[tx.type] ?? { Icon: ArrowLeftRight, color: 'text-slate-400' }
+              const status = STATUS_META[tx.status] ?? { label: tx.status, class: 'bg-slate-700 text-slate-400' }
+              return (
+                <div key={tx.id} className="flex items-center gap-4 px-5 py-3.5">
+                  <div className={`shrink-0 ${meta.color}`}>
+                    <meta.Icon size={18} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-white text-sm font-medium">{TX_LABELS[tx.type] ?? tx.type}</p>
+                    <p className="text-slate-500 text-xs truncate">{tx.description}</p>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <p className="text-white text-sm font-semibold">{fmt(tx.amount)}</p>
+                    <span className={`text-xs font-medium px-1.5 py-0.5 rounded-full ${status.class}`}>
+                      {status.label}
+                    </span>
+                  </div>
+                  <p className="text-slate-500 text-xs shrink-0 hidden sm:block">{fmtDate(tx.createdAt)}</p>
+                </div>
+              )
+            })}
           </div>
         )}
       </div>

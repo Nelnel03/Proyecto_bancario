@@ -11,3 +11,6 @@ export const transfer = (data) =>
 
 export const getHistory = (accountId) =>
   axiosClient.get(`/transactions/account/${accountId}`).then((r) => r.data)
+
+export const getRecentTransactions = (limit = 5) =>
+  axiosClient.get(`/transactions/recent?limit=${limit}`).then((r) => r.data)

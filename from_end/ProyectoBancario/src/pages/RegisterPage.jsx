@@ -1,29 +1,34 @@
+import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { useNavigate, Link } from 'react-router-dom'
+import { Eye, EyeOff } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { register as registerService } from '../services/authService'
 
 export default function RegisterPage() {
   const navigate = useNavigate()
+  const [showPwd, setShowPwd]         = useState(false)
+  const [showConfirm, setShowConfirm] = useState(false)
 
-  const {
-    register,
-    handleSubmit,
-    formState: { errors, isSubmitting },
-  } = useForm()
+  const { register, handleSubmit, watch, formState: { errors, isSubmitting } } = useForm()
+
+  const password = watch('password')
 
   const onSubmit = async (data) => {
     console.log('[Register] Enviando:', data)
     try {
-      const res = await registerService(data)
+      const res = await registerService({
+        full_name: data.full_name,
+        email:     data.email,
+        password:  data.password,
+      })
       console.log('[Register] Respuesta del backend:', res)
       toast.success('Cuenta creada. Ahora inicia sesión.')
       navigate('/login')
     } catch (err) {
       console.error('[Register] Error completo:', err)
       console.error('[Register] Respuesta de error:', err.response)
-      const msg = err.response?.data?.error ?? 'Error al registrarse'
-      toast.error(msg)
+      toast.error(err.response?.data?.error ?? 'Error al registrarse')
     }
   }
 
@@ -54,9 +59,7 @@ export default function RegisterPage() {
                 minLength: { value: 3, message: 'Mínimo 3 caracteres' },
               })}
             />
-            {errors.full_name && (
-              <p className="text-red-400 text-xs mt-1">{errors.full_name.message}</p>
-            )}
+            {errors.full_name && <p className="text-red-400 text-xs mt-1">{errors.full_name.message}</p>}
           </div>
 
           <div>
@@ -69,30 +72,60 @@ export default function RegisterPage() {
               className="w-full bg-slate-700 border border-slate-600 text-white placeholder-slate-500 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
               {...register('email', {
                 required: 'El correo es obligatorio',
-                pattern: { value: /\S+@\S+\.\S+/, message: 'Correo inválido' },
+                pattern: { value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/, message: 'Correo inválido' },
               })}
             />
-            {errors.email && (
-              <p className="text-red-400 text-xs mt-1">{errors.email.message}</p>
-            )}
+            {errors.email && <p className="text-red-400 text-xs mt-1">{errors.email.message}</p>}
           </div>
 
           <div>
             <label className="block text-slate-300 text-sm font-medium mb-1.5">
               Contraseña
             </label>
-            <input
-              type="password"
-              placeholder="••••••••"
-              className="w-full bg-slate-700 border border-slate-600 text-white placeholder-slate-500 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
-              {...register('password', {
-                required: 'La contraseña es obligatoria',
-                minLength: { value: 6, message: 'Mínimo 6 caracteres' },
-              })}
-            />
-            {errors.password && (
-              <p className="text-red-400 text-xs mt-1">{errors.password.message}</p>
-            )}
+            <div className="relative">
+              <input
+                type={showPwd ? 'text' : 'password'}
+                placeholder="••••••••"
+                className="w-full bg-slate-700 border border-slate-600 text-white placeholder-slate-500 rounded-lg px-4 py-2.5 pr-11 text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
+                {...register('password', {
+                  required: 'La contraseña es obligatoria',
+                  minLength: { value: 6, message: 'Mínimo 6 caracteres' },
+                })}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPwd((v) => !v)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200 transition-colors"
+              >
+                {showPwd ? <EyeOff size={17} /> : <Eye size={17} />}
+              </button>
+            </div>
+            {errors.password && <p className="text-red-400 text-xs mt-1">{errors.password.message}</p>}
+          </div>
+
+          <div>
+            <label className="block text-slate-300 text-sm font-medium mb-1.5">
+              Confirmar contraseña
+            </label>
+            <div className="relative">
+              <input
+                type={showConfirm ? 'text' : 'password'}
+                placeholder="••••••••"
+                className="w-full bg-slate-700 border border-slate-600 text-white placeholder-slate-500 rounded-lg px-4 py-2.5 pr-11 text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
+                {...register('confirm_password', {
+                  required: 'Confirma tu contraseña',
+                  validate: (v) => v === password || 'Las contraseñas no coinciden',
+                })}
+              />
+              <button
+                type="button"
+                onClick={() => setShowConfirm((v) => !v)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200 transition-colors"
+              >
+                {showConfirm ? <EyeOff size={17} /> : <Eye size={17} />}
+              </button>
+            </div>
+            {errors.confirm_password && <p className="text-red-400 text-xs mt-1">{errors.confirm_password.message}</p>}
           </div>
 
           <button
