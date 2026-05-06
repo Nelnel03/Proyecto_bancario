@@ -1,5 +1,6 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
-import ProtectedRoute from './ProtectedRoute'
+import ProtectedRoute             from './ProtectedRoute'
+import PrivateLayout              from '../components/layout/PrivateLayout'
 
 import LoginPage              from '../pages/LoginPage'
 import RegisterPage           from '../pages/RegisterPage'
@@ -17,39 +18,21 @@ export default function AppRouter() {
       <Route path="/login"    element={<LoginPage />} />
       <Route path="/register" element={<RegisterPage />} />
 
-      {/* Rutas protegidas */}
-      <Route path="/" element={
+      {/* Rutas protegidas — todas comparten PrivateLayout */}
+      <Route element={
         <ProtectedRoute>
-          <DashboardPage />
+          <PrivateLayout />
         </ProtectedRoute>
-      } />
-      <Route path="/accounts" element={
-        <ProtectedRoute>
-          <AccountsPage />
-        </ProtectedRoute>
-      } />
-      <Route path="/deposit" element={
-        <ProtectedRoute>
-          <DepositPage />
-        </ProtectedRoute>
-      } />
-      <Route path="/withdrawal" element={
-        <ProtectedRoute>
-          <WithdrawalPage />
-        </ProtectedRoute>
-      } />
-      <Route path="/transfer" element={
-        <ProtectedRoute>
-          <TransferPage />
-        </ProtectedRoute>
-      } />
-      <Route path="/history" element={
-        <ProtectedRoute>
-          <TransactionHistoryPage />
-        </ProtectedRoute>
-      } />
+      }>
+        <Route path="/"           element={<DashboardPage />} />
+        <Route path="/accounts"   element={<AccountsPage />} />
+        <Route path="/deposit"    element={<DepositPage />} />
+        <Route path="/withdrawal" element={<WithdrawalPage />} />
+        <Route path="/transfer"   element={<TransferPage />} />
+        <Route path="/history"    element={<TransactionHistoryPage />} />
+      </Route>
 
-      {/* Cualquier ruta desconocida → inicio */}
+      {/* Ruta desconocida → inicio */}
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   )
