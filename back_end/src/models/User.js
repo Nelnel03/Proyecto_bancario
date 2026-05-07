@@ -28,6 +28,11 @@ module.exports = (sequelize) => {
       allowNull: false,
       defaultValue: true,
     },
+    role: {
+      type: DataTypes.TINYINT.UNSIGNED,
+      allowNull: false,
+      defaultValue: 4, // 1=super_admin | 2=admin | 3=evaluador | 4=usuario
+    },
   }, {
     tableName: 'users',
     timestamps: true,

@@ -1,3 +1,4 @@
+import './NoAccountsBanner.css'
 import { useNavigate } from 'react-router-dom'
 import { Wallet } from 'lucide-react'
 
@@ -13,23 +14,19 @@ export default function NoAccountsBanner({
   return (
     <div className={`rounded-2xl p-8 flex flex-col items-center text-center border ${
       informative
-        ? 'bg-blue-500/5 border-blue-500/20'
-        : 'bg-slate-800 border-slate-700 border-dashed'
+        ? 'bg-blue-50 border-blue-200'
+        : 'bg-white border-gray-200 border-dashed shadow-sm'
     }`}>
       <div className={`w-14 h-14 rounded-full flex items-center justify-center mb-4 ${
-        informative ? 'bg-blue-600/20' : 'bg-slate-700'
+        informative ? 'bg-blue-100' : 'bg-gray-100'
       }`}>
-        <Wallet size={26} className={informative ? 'text-blue-400' : 'text-slate-500'} />
+        <Wallet size={26} className={informative ? 'text-blue-600' : 'text-gray-400'} />
       </div>
-      <p className="text-white font-semibold text-base">{message}</p>
-      <p className="text-slate-400 text-sm mt-1 max-w-xs">{description}</p>
+      <p className="text-gray-900 font-semibold text-base">{message}</p>
+      <p className="text-gray-500 text-sm mt-1 max-w-xs">{description}</p>
       <button
         onClick={() => navigate(actionTo)}
-        className={`mt-5 text-sm font-medium px-5 py-2 rounded-lg transition-colors ${
-          informative
-            ? 'bg-blue-600 hover:bg-blue-500 text-white'
-            : 'bg-blue-600 hover:bg-blue-500 text-white'
-        }`}
+        className="mt-5 text-sm font-medium px-5 py-2 rounded-lg transition-colors bg-slate-900 hover:bg-slate-800 text-white shadow-sm"
       >
         {actionLabel}
       </button>

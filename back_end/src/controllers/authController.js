@@ -16,16 +16,18 @@ const { ok, fail } = require('../utils/response');
 
 /**
  * Genera un JWT firmado con los datos básicos del usuario.
- * El payload incluye solo `id` y `email` para no exponer información sensible.
+ * El payload incluye `id`, `email` y `role` para que los middlewares
+ * de autorización puedan verificar permisos sin consultar la BD.
  *
  * @param {object} user        - Instancia de User de Sequelize
  * @param {string} user.id     - UUID del usuario
  * @param {string} user.email  - Email del usuario
+ * @param {string} user.role   - Rol del usuario ('user' | 'admin')
  * @returns {string} Token JWT firmado
  */
 const signToken = (user) =>
   jwt.sign(
-    { id: user.id, email: user.email },
+    { id: user.id, email: user.email, role: user.role },
     process.env.JWT_SECRET,
     { expiresIn: process.env.JWT_EXPIRES_IN || '24h' }
   );
@@ -59,7 +61,7 @@ exports.register = async (req, res) => {
 
   return ok(
     res,
-    { token: signToken(user), user: { id: user.id, full_name: user.full_name, email: user.email } },
+    { token: signToken(user), user: { id: user.id, full_name: user.full_name, email: user.email, role: user.role } },
     'Usuario registrado exitosamente',
     201
   );
@@ -96,7 +98,7 @@ exports.login = async (req, res) => {
 
   return ok(
     res,
-    { token: signToken(user), user: { id: user.id, full_name: user.full_name, email: user.email } },
+    { token: signToken(user), user: { id: user.id, full_name: user.full_name, email: user.email, role: user.role } },
     'Login exitoso'
   );
 };

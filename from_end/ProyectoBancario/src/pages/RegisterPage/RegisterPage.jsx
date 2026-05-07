@@ -1,9 +1,10 @@
+import './RegisterPage.css'
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { useNavigate, Link } from 'react-router-dom'
 import { Eye, EyeOff } from 'lucide-react'
 import toast from 'react-hot-toast'
-import { register as registerService } from '../services/authService'
+import { register as registerService } from '../../services/authService'
 
 export default function RegisterPage() {
   const navigate = useNavigate()
@@ -33,60 +34,60 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-900 flex items-center justify-center px-4">
+    <div className="min-h-screen bg-gray-100 flex items-center justify-center px-4">
       <div className="w-full max-w-sm">
 
         <div className="flex flex-col items-center mb-8">
-          <div className="w-12 h-12 rounded-full bg-blue-600 flex items-center justify-center text-white text-xl font-bold mb-4">
+          <div className="w-12 h-12 rounded-xl bg-slate-900 flex items-center justify-center text-white text-xl font-bold mb-4 shadow-lg">
             B
           </div>
-          <h1 className="text-white text-2xl font-bold">Crear cuenta</h1>
-          <p className="text-slate-400 text-sm mt-1">Únete a Banco App</p>
+          <h1 className="text-gray-900 text-2xl font-bold">Crear cuenta</h1>
+          <p className="text-gray-500 text-sm mt-1">Únete a Banco App</p>
         </div>
 
-        <form onSubmit={handleSubmit(onSubmit)} className="bg-slate-800 rounded-2xl p-8 shadow-xl space-y-5">
+        <form onSubmit={handleSubmit(onSubmit)} className="bg-white rounded-2xl p-8 shadow-sm border border-gray-200 space-y-5">
 
           <div>
-            <label className="block text-slate-300 text-sm font-medium mb-1.5">
+            <label className="block text-gray-700 text-sm font-medium mb-1.5">
               Nombre completo
             </label>
             <input
               type="text"
               placeholder="Juan Pérez"
-              className="w-full bg-slate-700 border border-slate-600 text-white placeholder-slate-500 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
+              className="w-full bg-gray-50 border border-gray-300 text-gray-900 placeholder-gray-400 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-slate-500 focus:ring-1 focus:ring-slate-500 transition-colors"
               {...register('full_name', {
                 required: 'El nombre es obligatorio',
                 minLength: { value: 3, message: 'Mínimo 3 caracteres' },
               })}
             />
-            {errors.full_name && <p className="text-red-400 text-xs mt-1">{errors.full_name.message}</p>}
+            {errors.full_name && <p className="text-red-500 text-xs mt-1">{errors.full_name.message}</p>}
           </div>
 
           <div>
-            <label className="block text-slate-300 text-sm font-medium mb-1.5">
+            <label className="block text-gray-700 text-sm font-medium mb-1.5">
               Correo electrónico
             </label>
             <input
               type="email"
               placeholder="tu@correo.com"
-              className="w-full bg-slate-700 border border-slate-600 text-white placeholder-slate-500 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
+              className="w-full bg-gray-50 border border-gray-300 text-gray-900 placeholder-gray-400 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-slate-500 focus:ring-1 focus:ring-slate-500 transition-colors"
               {...register('email', {
                 required: 'El correo es obligatorio',
                 pattern: { value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/, message: 'Correo inválido' },
               })}
             />
-            {errors.email && <p className="text-red-400 text-xs mt-1">{errors.email.message}</p>}
+            {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email.message}</p>}
           </div>
 
           <div>
-            <label className="block text-slate-300 text-sm font-medium mb-1.5">
+            <label className="block text-gray-700 text-sm font-medium mb-1.5">
               Contraseña
             </label>
             <div className="relative">
               <input
                 type={showPwd ? 'text' : 'password'}
                 placeholder="••••••••"
-                className="w-full bg-slate-700 border border-slate-600 text-white placeholder-slate-500 rounded-lg px-4 py-2.5 pr-11 text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
+                className="w-full bg-gray-50 border border-gray-300 text-gray-900 placeholder-gray-400 rounded-lg px-4 py-2.5 pr-11 text-sm focus:outline-none focus:border-slate-500 focus:ring-1 focus:ring-slate-500 transition-colors"
                 {...register('password', {
                   required: 'La contraseña es obligatoria',
                   minLength: { value: 6, message: 'Mínimo 6 caracteres' },
@@ -95,23 +96,23 @@ export default function RegisterPage() {
               <button
                 type="button"
                 onClick={() => setShowPwd((v) => !v)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200 transition-colors"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
               >
                 {showPwd ? <EyeOff size={17} /> : <Eye size={17} />}
               </button>
             </div>
-            {errors.password && <p className="text-red-400 text-xs mt-1">{errors.password.message}</p>}
+            {errors.password && <p className="text-red-500 text-xs mt-1">{errors.password.message}</p>}
           </div>
 
           <div>
-            <label className="block text-slate-300 text-sm font-medium mb-1.5">
+            <label className="block text-gray-700 text-sm font-medium mb-1.5">
               Confirmar contraseña
             </label>
             <div className="relative">
               <input
                 type={showConfirm ? 'text' : 'password'}
                 placeholder="••••••••"
-                className="w-full bg-slate-700 border border-slate-600 text-white placeholder-slate-500 rounded-lg px-4 py-2.5 pr-11 text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
+                className="w-full bg-gray-50 border border-gray-300 text-gray-900 placeholder-gray-400 rounded-lg px-4 py-2.5 pr-11 text-sm focus:outline-none focus:border-slate-500 focus:ring-1 focus:ring-slate-500 transition-colors"
                 {...register('confirm_password', {
                   required: 'Confirma tu contraseña',
                   validate: (v) => v === password || 'Las contraseñas no coinciden',
@@ -120,25 +121,25 @@ export default function RegisterPage() {
               <button
                 type="button"
                 onClick={() => setShowConfirm((v) => !v)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200 transition-colors"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
               >
                 {showConfirm ? <EyeOff size={17} /> : <Eye size={17} />}
               </button>
             </div>
-            {errors.confirm_password && <p className="text-red-400 text-xs mt-1">{errors.confirm_password.message}</p>}
+            {errors.confirm_password && <p className="text-red-500 text-xs mt-1">{errors.confirm_password.message}</p>}
           </div>
 
           <button
             type="submit"
             disabled={isSubmitting}
-            className="w-full bg-blue-600 hover:bg-blue-500 disabled:bg-blue-800 disabled:cursor-not-allowed text-white font-medium py-2.5 rounded-lg text-sm transition-colors"
+            className="w-full bg-slate-900 hover:bg-slate-800 disabled:bg-slate-400 disabled:cursor-not-allowed text-white font-medium py-2.5 rounded-lg text-sm transition-colors shadow-sm"
           >
             {isSubmitting ? 'Creando cuenta...' : 'Crear cuenta'}
           </button>
 
-          <p className="text-center text-slate-400 text-sm">
+          <p className="text-center text-gray-500 text-sm">
             ¿Ya tienes cuenta?{' '}
-            <Link to="/login" className="text-blue-400 hover:text-blue-300 transition-colors">
+            <Link to="/login" className="text-slate-900 font-medium hover:underline transition-colors">
               Inicia sesión
             </Link>
           </p>

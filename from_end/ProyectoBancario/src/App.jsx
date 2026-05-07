@@ -3,13 +3,13 @@ import AppRouter from './routes/AppRouter'
 
 export default function App() {
   return (
-    <div className="min-h-screen bg-slate-900 text-white">
+    <div className="min-h-screen bg-gray-100 text-gray-900">
       <Toaster
         position="top-right"
         toastOptions={{
-          style: { background: '#1e293b', color: '#f1f5f9', border: '1px solid #334155' },
-          success: { iconTheme: { primary: '#22c55e', secondary: '#1e293b' } },
-          error:   { iconTheme: { primary: '#ef4444', secondary: '#1e293b' } },
+          style: { background: '#ffffff', color: '#1e293b', border: '1px solid #e2e8f0', boxShadow: '0 4px 12px rgba(0,0,0,0.08)' },
+          success: { iconTheme: { primary: '#10b981', secondary: '#ffffff' } },
+          error:   { iconTheme: { primary: '#ef4444', secondary: '#ffffff' } },
         }}
       />
       <AppRouter />

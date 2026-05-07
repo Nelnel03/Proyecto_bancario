@@ -83,6 +83,7 @@ app.use('/api/auth',         require('./routes/auth'));         // Registro y lo
 app.use('/api/users',        require('./routes/users'));        // Gestión de usuarios
 app.use('/api/accounts',     require('./routes/accounts'));     // Cuentas bancarias
 app.use('/api/transactions', require('./routes/transactions')); // Operaciones financieras
+app.use('/api/admin',        require('./routes/admin'));        // Panel de administración
 
 // ─── 5. MANEJO DE RUTAS NO ENCONTRADAS (404) ──────────────────────────────────
 // Si ninguna ruta coincide con la petición, se devuelve un error 404 en JSON.

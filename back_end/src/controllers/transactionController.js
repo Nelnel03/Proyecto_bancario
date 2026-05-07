@@ -38,7 +38,8 @@ exports.deposit = async (req, res) => {
   const account = await Account.findOne({ where: { account_number, is_active: true } });
   if (!account) return fail(res, 'Cuenta destino no encontrada', 404);
 
-  await account.increment('balance', { by: amount });
+  const newBalance = parseFloat(account.balance) + parseFloat(amount);
+  await account.update({ balance: newBalance });
 
   const tx = await Transaction.create({
     type:              'deposit',
@@ -50,12 +51,7 @@ exports.deposit = async (req, res) => {
 
   return ok(
     res,
-    {
-      transaction_id: tx.id,
-      // Recalculamos el saldo resultante en JS porque `increment` no refresca
-      // el valor en el objeto Sequelize automáticamente
-      new_balance: parseFloat(account.balance) + parseFloat(amount),
-    },
+    { transaction_id: tx.id, new_balance: newBalance },
     'Depósito realizado exitosamente',
     201
   );
@@ -84,7 +80,8 @@ exports.withdrawal = async (req, res) => {
     return fail(res, 'Saldo insuficiente', 422);
   }
 
-  await account.decrement('balance', { by: amount });
+  const newBalance = parseFloat(account.balance) - parseFloat(amount);
+  await account.update({ balance: newBalance });
 
   const tx = await Transaction.create({
     type:              'withdrawal',
@@ -96,10 +93,7 @@ exports.withdrawal = async (req, res) => {
 
   return ok(
     res,
-    {
-      transaction_id: tx.id,
-      new_balance: parseFloat(account.balance) - parseFloat(amount),
-    },
+    { transaction_id: tx.id, new_balance: newBalance },
     'Retiro realizado exitosamente',
     201
   );
@@ -204,7 +198,6 @@ exports.transfer = async (req, res) => {
  * @param {import('express').Response} res
  */
 exports.getHistory = async (req, res) => {
-  // Verificamos que la cuenta le pertenezca al usuario antes de devolver el historial
   const account = await Account.findOne({
     where: { id: req.params.accountId, user_id: req.user.id },
   });
@@ -212,14 +205,42 @@ exports.getHistory = async (req, res) => {
 
   const transactions = await Transaction.findAll({
     where: {
-      // Op.or: buscamos registros donde la cuenta aparezca en cualquiera de los dos roles
       [Op.or]: [
         { source_account_id: account.id },
         { target_account_id: account.id },
       ],
     },
-    order: [['created_at', 'DESC']], // Más recientes primero
+    order: [['created_at', 'DESC']],
   });
 
   return ok(res, transactions, 'Historial obtenido exitosamente');
+};
+
+/**
+ * GET /api/transactions/recent?limit=5
+ * Devuelve las últimas N transacciones de todas las cuentas del usuario autenticado.
+ *
+ * @param {import('express').Request}  req
+ * @param {import('express').Response} res
+ */
+exports.getRecent = async (req, res) => {
+  const limit = Math.min(parseInt(req.query.limit) || 5, 20);
+
+  const accounts = await Account.findAll({ where: { user_id: req.user.id }, attributes: ['id'] });
+  const accountIds = accounts.map((a) => a.id);
+
+  if (accountIds.length === 0) return ok(res, [], 'Sin transacciones');
+
+  const transactions = await Transaction.findAll({
+    where: {
+      [Op.or]: [
+        { source_account_id: { [Op.in]: accountIds } },
+        { target_account_id: { [Op.in]: accountIds } },
+      ],
+    },
+    order: [['created_at', 'DESC']],
+    limit,
+  });
+
+  return ok(res, transactions, 'Transacciones recientes obtenidas');
 };
