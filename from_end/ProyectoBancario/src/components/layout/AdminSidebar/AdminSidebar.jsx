@@ -1,13 +1,14 @@
 import { NavLink } from 'react-router-dom'
-import { LayoutDashboard, Users, ScrollText, LogOut } from 'lucide-react'
+import { LayoutDashboard, Users, ScrollText, LogOut, ShieldCheck } from 'lucide-react'
 import useAuthStore from '../../../store/useAuthStore'
 import { ROLES, ROLE_LABELS, ROLE_BADGE } from '../../../utils/constants'
 
 // Links disponibles según el rol
 const ALL_LINKS = [
-  { to: '/admin',              label: 'Dashboard',     icon: LayoutDashboard, minRole: ROLES.ADMIN },
-  { to: '/admin/users',        label: 'Usuarios',      icon: Users,           minRole: ROLES.EVALUATOR },
-  { to: '/admin/transactions', label: 'Transacciones', icon: ScrollText,      minRole: ROLES.ADMIN },
+  { to: '/admin',              label: 'Dashboard',        icon: LayoutDashboard, minRole: ROLES.ADMIN },
+  { to: '/admin/users',        label: 'Usuarios',         icon: Users,           minRole: ROLES.EVALUATOR },
+  { to: '/admin/transactions', label: 'Transacciones',    icon: ScrollText,      minRole: ROLES.EVALUATOR },
+  { to: '/admin/admins',       label: 'Administradores',  icon: ShieldCheck,     minRole: ROLES.SUPER_ADMIN },
 ]
 
 // Color del acento según el rol del usuario logueado

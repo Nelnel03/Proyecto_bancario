@@ -18,6 +18,7 @@ const {
   getUsers,
   toggleUser,
   changeRole,
+  createAdmin,
   getTransactions,
 } = require('../controllers/adminController');
 
@@ -27,7 +28,10 @@ router.patch ('/users/:id/toggle',  auth, panelAuth,       toggleUser);
 
 // ── Rutas accesibles solo por roles 1 y 2 ───────────────────────────────────
 router.get   ('/stats',             auth, requireRole(2),  getStats);
-router.get   ('/transactions',      auth, requireRole(2),  getTransactions);
+router.get   ('/transactions',      auth, requireRole(3),  getTransactions);
 router.patch ('/users/:id/role',    auth, requireRole(2),  changeRole);
+
+// ── Rutas exclusivas del super_admin (rol 1) ────────────────────────────────
+router.post  ('/admins',            auth, requireRole(1),  createAdmin);
 
 module.exports = router;

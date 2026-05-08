@@ -3,5 +3,8 @@ import useAuthStore from '../store/useAuthStore'
 
 export default function PublicRoute({ children }) {
   const token = useAuthStore((s) => s.token)
-  return token ? <Navigate to="/" replace /> : children
+  const user  = useAuthStore((s) => s.user)
+
+  if (!token) return children
+  return <Navigate to={user?.role <= 3 ? '/admin' : '/'} replace />
 }

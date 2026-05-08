@@ -19,3 +19,7 @@ export const changeUserRole = (userId, role) =>
 /** Historial global de transacciones paginado (solo roles 1 y 2) */
 export const getAdminTransactions = ({ page = 1, limit = 20, type = 'all' } = {}) =>
   axiosClient.get('/admin/transactions', { params: { page, limit, type } }).then((r) => r.data)
+
+/** Crea un nuevo usuario con rol Admin (solo super_admin) */
+export const createAdmin = (data) =>
+  axiosClient.post('/admin/admins', data).then((r) => r.data)

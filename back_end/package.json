@@ -6,10 +6,19 @@
   "scripts": {
     "start": "node index.js",
     "dev": "nodemon index.js",
+    "test": "jest --runInBand --testPathIgnorePatterns=bd_mysql_invalidos",
+    "test:bd": "jest --runInBand bd_mysql_invalidos",
+    "test:all": "jest --runInBand",
+    "test:coverage": "jest --runInBand --coverage",
     "db:migrate": "sequelize-cli db:migrate",
     "db:migrate:undo": "sequelize-cli db:migrate:undo:all",
     "db:seed": "sequelize-cli db:seed:all",
     "db:reset": "sequelize-cli db:migrate:undo:all && sequelize-cli db:migrate && sequelize-cli db:seed:all"
+  },
+  "jest": {
+    "testEnvironment": "node",
+    "testMatch": ["**/tests/**/*.test.js"],
+    "verbose": true
   },
   "keywords": [],
   "author": "",
@@ -26,7 +35,9 @@
     "uuid": "^14.0.0"
   },
   "devDependencies": {
+    "jest": "^30.4.1",
     "nodemon": "^3.1.14",
-    "sequelize-cli": "^6.6.5"
+    "sequelize-cli": "^6.6.5",
+    "sqlite3": "^6.0.1"
   }
 }

@@ -16,6 +16,7 @@
  * └──────────────────────────┴─────────────┴───────┴───────────┘
  */
 
+const bcrypt                                      = require('bcryptjs');
 const { Op }                                      = require('sequelize');
 const { User, Account, AccountType, Transaction } = require('../models');
 const { ok, fail }                                = require('../utils/response');
@@ -42,18 +43,20 @@ const visibleRoles = (requesterRole) => {
  * Métricas globales. Solo accesible para roles 1 y 2.
  */
 exports.getStats = async (req, res) => {
-  const [totalUsers, totalEvaluators, totalAccounts, totalTransactions, balanceResult] =
+  const [totalAdmins, totalEvaluators, totalUsers, totalAccounts, totalTransactions, balanceResult] =
     await Promise.all([
-      User.count({ where: { role: ROLES.USER } }),
+      User.count({ where: { role: ROLES.ADMIN } }),
       User.count({ where: { role: ROLES.EVALUATOR } }),
+      User.count({ where: { role: ROLES.USER } }),
       Account.count({ where: { is_active: true } }),
       Transaction.count(),
       Account.sum('balance', { where: { is_active: true } }),
     ]);
 
   return ok(res, {
-    total_users:        totalUsers,
+    total_admins:       totalAdmins,
     total_evaluators:   totalEvaluators,
+    total_users:        totalUsers,
     total_accounts:     totalAccounts,
     total_transactions: totalTransactions,
     total_balance:      parseFloat(balanceResult ?? 0),
@@ -161,16 +164,68 @@ exports.changeRole = async (req, res) => {
 };
 
 /**
+ * POST /api/admin/admins
+ * Crea un nuevo usuario con rol Admin (2). Solo accesible por super_admin (1).
+ */
+exports.createAdmin = async (req, res) => {
+  const { full_name, email, password } = req.body;
+
+  if (!full_name || !email || !password) {
+    return fail(res, 'Nombre, email y contraseña son requeridos', 400);
+  }
+  if (password.length < 6) {
+    return fail(res, 'La contraseña debe tener al menos 6 caracteres', 400);
+  }
+
+  const existing = await User.findOne({ where: { email } });
+  if (existing) return fail(res, 'El email ya está registrado', 409);
+
+  const password_hash = await bcrypt.hash(password, 10);
+  const admin = await User.create({
+    full_name,
+    email,
+    password_hash,
+    role:      ROLES.ADMIN,
+    is_active: true,
+  });
+
+  return ok(res, {
+    id:         admin.id,
+    full_name:  admin.full_name,
+    email:      admin.email,
+    role:       admin.role,
+    role_label: ROLE_LABELS[admin.role],
+    is_active:  admin.is_active,
+    created_at: admin.created_at,
+    accounts:   [],
+  }, 'Administrador creado exitosamente', 201);
+};
+
+/**
  * GET /api/admin/transactions?page=1&limit=20&type=all
  * Historial global paginado. Solo roles 1 y 2.
  */
 exports.getTransactions = async (req, res) => {
+  const requesterRole = req.user.role;
   const page   = Math.max(parseInt(req.query.page)  || 1, 1);
   const limit  = Math.min(parseInt(req.query.limit) || 20, 100);
   const type   = req.query.type;
   const offset = (page - 1) * limit;
 
   const where = type && type !== 'all' ? { type } : {};
+
+  // Evaluador (3): solo ve transacciones de cuentas de usuarios (role 4)
+  if (requesterRole === ROLES.EVALUATOR) {
+    const userAccounts = await Account.findAll({
+      include: [{ model: User, as: 'user', where: { role: ROLES.USER }, attributes: [] }],
+      attributes: ['id'],
+    });
+    const accountIds = userAccounts.map((a) => a.id);
+    where[Op.or] = [
+      { source_account_id: { [Op.in]: accountIds } },
+      { target_account_id: { [Op.in]: accountIds } },
+    ];
+  }
 
   const { count, rows } = await Transaction.findAndCountAll({
     where,

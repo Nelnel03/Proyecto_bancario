@@ -20,6 +20,7 @@ import TransactionHistoryPage from '../pages/TransactionHistoryPage/TransactionH
 import AdminDashboardPage    from '../pages/admin/AdminDashboardPage/AdminDashboardPage'
 import AdminUsersPage        from '../pages/admin/AdminUsersPage/AdminUsersPage'
 import AdminTransactionsPage from '../pages/admin/AdminTransactionsPage/AdminTransactionsPage'
+import SuperAdminPage        from '../pages/admin/SuperAdminPage/SuperAdminPage'
 
 export default function AppRouter() {
   return (
@@ -55,6 +56,7 @@ export default function AppRouter() {
         <Route path="/admin"              element={<AdminDashboardPage />} />
         <Route path="/admin/users"        element={<AdminUsersPage />} />
         <Route path="/admin/transactions" element={<AdminTransactionsPage />} />
+        <Route path="/admin/admins"       element={<SuperAdminPage />} />
       </Route>
 
       <Route path="*" element={<Navigate to="/" replace />} />

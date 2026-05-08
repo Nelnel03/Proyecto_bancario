@@ -19,9 +19,10 @@ export default function LoginPage() {
     try {
       const res = await loginService(data)
       console.log('[Login] Respuesta del backend:', res)
-      loginStore(res.data.token, res.data.user)
-      toast.success(`Bienvenido, ${res.data.user.full_name}`)
-      navigate('/')
+      const user = res.data.user
+      loginStore(res.data.token, user)
+      toast.success(`Bienvenido, ${user.full_name}`)
+      navigate(user.role <= 3 ? '/admin' : '/')
     } catch (err) {
       console.error('[Login] Error completo:', err)
       console.error('[Login] Respuesta de error:', err.response)
